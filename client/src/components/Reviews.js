@@ -7,15 +7,26 @@ const Reviews = ({ serviceId }) => {
         rating: "",
         comment: "",
     });
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState("");
 
     const { rating, comment } = formData;
 
     useEffect(() => {
         const fetchReviews = async () => {
-            const response = await axios.get(
-                `https://a44fb36f-9a36-471e-83fa-39ad2a30d40d-00-4n2exbzy3e5h.pike.replit.dev/api/reviews/${serviceId}`,
-            );
-            setReviews(response.data);
+            try {
+                const response = await axios.get(
+                    `https://a44fb36f-9a36-471e-83fa-39ad2a30d40d-00-4n2exbzy3e5h.pike.replit.dev/api/reviews/${serviceId}`,
+                );
+                setReviews(response.data);
+            } catch (err) {
+                setError(
+                    "Ошибка при загрузке отзывов. Пожалуйста, попробуйте позже.",
+                );
+                console.error(err);
+            } finally {
+                setLoading(false);
+            }
         };
         fetchReviews();
     }, [serviceId]);
@@ -25,6 +36,11 @@ const Reviews = ({ serviceId }) => {
 
     const onSubmit = async (e) => {
         e.preventDefault();
+        if (rating < 1 || rating > 5) {
+            alert("Рейтинг должен быть от 1 до 5");
+            return;
+        }
+
         try {
             const userId = "12345"; // Замените на идентификатор текущего пользователя
             await axios.post(
@@ -48,6 +64,14 @@ const Reviews = ({ serviceId }) => {
             alert("Ошибка добавления отзыва");
         }
     };
+
+    if (loading) {
+        return <div>Загрузка отзывов...</div>;
+    }
+
+    if (error) {
+        return <div className="alert alert-danger">{error}</div>;
+    }
 
     return (
         <div>

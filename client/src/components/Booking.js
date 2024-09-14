@@ -3,9 +3,23 @@ import axios from "axios";
 
 const Booking = ({ serviceId }) => {
     const [dateTime, setDateTime] = useState("");
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState("");
 
     const onSubmit = async (e) => {
         e.preventDefault();
+        setLoading(true);
+        setError(""); // Сброс ошибки перед новой попыткой
+
+        // Проверка на будущее время
+        const selectedDateTime = new Date(dateTime);
+        const now = new Date();
+        if (selectedDateTime <= now) {
+            setError("Выберите дату и время в будущем.");
+            setLoading(false);
+            return;
+        }
+
         try {
             const userId = "12345"; // Замените на идентификатор текущего пользователя
             await axios.post(
@@ -13,22 +27,30 @@ const Booking = ({ serviceId }) => {
                 { userId, serviceId, dateTime },
             );
             alert("Бронирование успешно создано");
+            setDateTime(""); // Очистка поля после успешного бронирования
         } catch (err) {
             console.error(err);
-            alert("Ошибка бронирования");
+            setError(err.response?.data?.msg || "Ошибка бронирования");
+        } finally {
+            setLoading(false);
         }
     };
 
     return (
-        <form onSubmit={onSubmit}>
-            <input
-                type="datetime-local"
-                value={dateTime}
-                onChange={(e) => setDateTime(e.target.value)}
-                required
-            />
-            <button type="submit">Забронировать</button>
-        </form>
+        <div>
+            <form onSubmit={onSubmit}>
+                <input
+                    type="datetime-local"
+                    value={dateTime}
+                    onChange={(e) => setDateTime(e.target.value)}
+                    required
+                />
+                <button type="submit" disabled={loading}>
+                    {loading ? "Загрузка..." : "Забронировать"}
+                </button>
+                {error && <div className="alert alert-danger">{error}</div>}
+            </form>
+        </div>
     );
 };
 
