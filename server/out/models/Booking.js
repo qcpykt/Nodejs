@@ -1,21 +1,28 @@
 const mongoose = require('mongoose');
 
-const BookingSchema = new mongoose.Schema({
-    userId: { type: mongoose.Types.ObjectId, ref: 'User', required: true }, // Используем ObjectId для ссылки на пользователя
-    serviceId: { type: mongoose.Types.ObjectId, ref: 'Service', required: true }, // Используем ObjectId для ссылки на услугу
+const bookingSchema = new mongoose.Schema({
+    userId: { type: mongoose.Types.ObjectId, ref: 'User', required: true },
+    serviceId: { type: mongoose.Types.ObjectId, ref: 'Service', required: true },
     dateTime: { type: Date, required: true },
+    endDateTime: { type: Date, required: true },
     status: { type: String, enum: ['pending', 'confirmed', 'canceled'], default: 'pending' },
-}, { timestamps: true }); // Автоматически добавляет поля createdAt и updatedAt
+}, { timestamps: true });
 
-// Пример статического метода для получения всех бронирований пользователя
-BookingSchema.statics.findByUserId = function(userId) {
+bookingSchema.statics.findByUserId = function(userId) {
     return this.find({ userId });
 };
 
-// Пример метода для обновления статуса бронирования
-BookingSchema.methods.updateStatus = function(newStatus) {
+bookingSchema.methods.updateStatus = function(newStatus) {
     this.status = newStatus;
     return this.save();
 };
 
-module.exports = mongoose.model('Booking', BookingSchema);
+const Booking = mongoose.model('Booking', bookingSchema);
+
+// Пример создания нового бронирования
+const createBooking = async (userId, serviceId, dateTime) => {
+    const booking = new Booking({ userId, serviceId, dateTime });
+    return await booking.save();
+};
+
+module.exports = mongoose.model('Booking', bookingSchema);

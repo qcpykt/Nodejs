@@ -1,3 +1,4 @@
+//out/models/Review.js
 const mongoose = require('mongoose');
 
 const ReviewSchema = new mongoose.Schema({
@@ -6,7 +7,7 @@ const ReviewSchema = new mongoose.Schema({
     rating: { 
         type: Number, 
         required: true, 
-        min: 1,  // Минимальное значение рейтинга
+        min: 0,  // Минимальное значение рейтинга
         max: 5   // Максимальное значение рейтинга
     },
     comment: { type: String, required: true },

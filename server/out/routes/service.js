@@ -3,6 +3,14 @@ const { body, validationResult } = require('express-validator');
 const Service = require('../models/Service');
 const router = express.Router();
 
+// Валидация для добавления новой услуги
+const serviceValidation = [
+    body('title').notEmpty().withMessage('Название услуги обязательно').isLength({ min: 1 }).withMessage('Минимальная длина заголовка 1 символ'),
+    body('description').notEmpty().withMessage('Описание услуги обязательно').isLength({ min: 1 }).withMessage('Минимальная длина описания 1 символ'),
+    body('price').isNumeric().withMessage('Цена должна быть числом').isFloat({ min: 0 }).withMessage('Цена должна быть неотрицательной'),
+    body('categoryId').isMongoId().withMessage('Некорректный ID категории')
+];
+
 // Получение всех услуг
 router.get('/', async (req, res) => {
     try {
@@ -13,14 +21,6 @@ router.get('/', async (req, res) => {
         res.status(500).send('Ошибка сервера');
     }
 });
-
-// Валидация для добавления новой услуги
-const serviceValidation = [
-    body('title').notEmpty().withMessage('Название услуги обязательно'),
-    body('description').notEmpty().withMessage('Описание услуги обязательно'),
-    body('price').isNumeric().withMessage('Цена должна быть числом'),
-    body('categoryId').notEmpty().withMessage('ID категории обязателен'),
-];
 
 // Добавление новой услуги
 router.post('/', serviceValidation, async (req, res) => {
@@ -64,6 +64,18 @@ router.delete('/:id', async (req, res) => {
     } catch (err) {
         console.error(err);
         res.status(500).send('Ошибка сервера');
+    }
+});
+
+// Получение услуги по ID
+router.get('/:id', async (req, res) => {
+    try {
+        const service = await Service.findById(req.params.id);
+        if (!service) return res.status(404).send('Услуга не найдена');
+        res.json(service);
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Ошибка при получении услуги');
     }
 });
 

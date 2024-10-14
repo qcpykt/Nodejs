@@ -1,62 +1,59 @@
+// routes/user.js
 const express = require('express');
-const User = require('../models/User');
-const bcrypt = require('bcryptjs');
-const { body, validationResult } = require('express-validator');
-const jwt = require('jsonwebtoken'); // Импорт JWT для аутентификации
+const User = require('../models/User'); // Импортируем модель User
+const Review = require('../models/Review'); // Импортируем модель Review
+const auth = require('../middleware/authMiddleware'); // Импортируйте middleware для аутентификации
 const router = express.Router();
 
-// Регистрация пользователя
-router.post('/register', [
-    body('name').notEmpty().withMessage('Имя обязательно'),
-    body('phone').notEmpty().withMessage('Телефон обязателен'),
-    body('email').isEmail().withMessage('Некорректный email').notEmpty().withMessage('Email обязателен'),
-    body('password').isLength({ min: 6 }).withMessage('Пароль должен содержать минимум 6 символов')
-], async (req, res) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-        return res.status(400).json({ errors: errors.array() });
-    }
-
-    const { name, phone, email, password } = req.body;
-
+// Получение данных пользователя по userId
+router.get('/:userId', auth, async (req, res) => {
     try {
-        let user = await User.findOne({ email });
-        if (user) return res.status(400).json({ msg: 'Пользователь уже существует' });
+        // Проверяем, что запрашиваемый пользователь существует
+        const user = await User.findById(req.params.userId);
+        if (!user) return res.status(404).send("Пользователь не найден.");
 
-        user = new User({ name, phone, email, password: await bcrypt.hash(password, 10) });
-        await user.save();
-        res.status(201).json({ msg: 'Пользователь зарегистрирован' });
+        // Отправляем данные пользователя, исключая пароль и другие чувствительные данные
+        const { password, ...userData } = user.toObject();
+        res.send(userData);
     } catch (err) {
         console.error(err);
-        res.status(500).send('Ошибка сервера');
+        res.status(500).send('Ошибка при получении пользователя');
     }
 });
 
-// Вход пользователя
-router.post('/login', [
-    body('email').isEmail().withMessage('Некорректный email').notEmpty().withMessage('Email обязателен'),
-    body('password').notEmpty().withMessage('Пароль обязателен')
-], async (req, res) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-        return res.status(400).json({ errors: errors.array() });
-    }
-
-    const { email, password } = req.body;
+router.put('/:id', auth, async (req, res) => {
+    const userId = req.params.id;
+    const updatedUserData = req.body;
 
     try {
-        const user = await User.findOne({ email });
-        if (!user) return res.status(400).json({ msg: 'Неверные учетные данные' });
+        // Находим пользователя по ID и обновляем его данные
+        const user = await User.findByIdAndUpdate(userId, updatedUserData, { new: true });
 
-        const isMatch = await bcrypt.compare(password, user.password);
-        if (!isMatch) return res.status(400).json({ msg: 'Неверные учетные данные' });
+        if (!user) {
+            return res.status(404).send('Пользователь не найден');
+        }
 
-        // Генерация JWT
-        const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
-        res.json({ msg: 'Вход выполнен успешно', token });
+        // Возвращаем обновленного пользователя
+        return res.json(user); // Отправляем только обновленного пользователя
     } catch (err) {
         console.error(err);
-        res.status(500).send('Ошибка сервера');
+        return res.status(500).send('Ошибка при обновлении пользователя');
+    }
+});
+
+// Получение отзывов пользователя
+router.get('/:userId/reviews', auth, async (req, res) => {
+    try {
+        // Проверяем, что запрашиваемый пользователь существует
+        const user = await User.findById(req.params.userId);
+        if (!user) return res.status(404).send("Пользователь не найден.");
+
+        // Получаем отзывы пользователя
+        const reviews = await Review.find({ userId: req.params.userId });
+        res.send(reviews);
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Ошибка при получении отзывов');
     }
 });
 
