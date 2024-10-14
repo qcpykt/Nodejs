@@ -1,0 +1,17 @@
+# Exported from Render on 2024-10-14T10:15:03Z
+services:
+- type: web
+  name: qcpykt-client
+  runtime: node
+  repo: https://github.com/qcpykt/Nodejs
+  plan: free
+  envVars:
+  - key: VITE_API_URL
+    sync: false
+  region: oregon
+  buildCommand: yarn
+  startCommand: yarn start
+  rootDir: ./client
+  previews:
+    generation: automatic
+version: "1"
